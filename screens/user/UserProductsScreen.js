@@ -1,5 +1,13 @@
-import React from "react";
-import { FlatList, Platform, Button, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  FlatList,
+  Platform,
+  Button,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { HeaderButtons, Item } from "react-navigation-header-buttons";
 import HeaderButton from "../../components/UI/HeaderButton";
@@ -11,6 +19,9 @@ import ProductItem from "../../components/shop//ProductItem";
 import * as productActions from "../../store/actions/products";
 
 const UserProductsScreen = (props) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState();
+
   const dispatch = useDispatch();
   const userProducts = useSelector((state) => state.products.userProducts);
 
@@ -26,12 +37,33 @@ const UserProductsScreen = (props) => {
       {
         text: "Yes",
         style: "destructive",
-        onPress: () => {
-          dispatch(productActions.deleteProduct(id));
+        onPress: async () => {
+          setError(null);
+          setIsLoading(true);
+          try {
+            await dispatch(productActions.deleteProduct(id));
+          } catch (err) {
+            setError(err.message);
+          }
+          setIsLoading(false);
         },
       },
     ]);
   };
+
+  useEffect(() => {
+    if (error) {
+      Alert.alert("An error occurred!", error, [{ text: "Okay" }]);
+    }
+  }, [error]);
+
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" Colors={Colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <FlatList
@@ -91,5 +123,13 @@ UserProductsScreen.navigationOptions = (navData) => {
     ),
   };
 };
+
+const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
 
 export default UserProductsScreen;
