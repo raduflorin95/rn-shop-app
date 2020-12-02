@@ -6,9 +6,10 @@ export const SET_ORDERS = "SET_ORDERS";
 const firebaseUrl = "https://rn-complete-guide-18716.firebaseio.com/orders";
 
 export const fetchOrders = () => {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
     try {
-      const response = await fetch(`${firebaseUrl}/u1.json`);
+      const userId = getState().auth.userId;
+      const response = await fetch(`${firebaseUrl}/${userId}.json`);
 
       if (!response.ok) {
         throw new Error("Something went wrong!");
@@ -38,19 +39,24 @@ export const fetchOrders = () => {
 };
 
 export const addOrder = (cartItems, totalAmount) => {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
+    const token = getState().auth.token;
+    const userId = getState().auth.userId;
     const date = new Date();
-    const response = await fetch(`${firebaseUrl}/u1.json`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        cartItems,
-        totalAmount,
-        date: date.toISOString(),
-      }),
-    });
+    const response = await fetch(
+      `${firebaseUrl}/${userId}.json?auth=${token}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cartItems,
+          totalAmount,
+          date: date.toISOString(),
+        }),
+      }
+    );
 
     if (!response.ok) {
       throw new Error("Something went wrong!");

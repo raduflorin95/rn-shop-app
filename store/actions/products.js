@@ -8,9 +8,10 @@ export const SET_PRODUCTS = "SET_PRODUCTS";
 const firebaseUrl = "https://rn-complete-guide-18716.firebaseio.com/products";
 
 export const fetchProducts = () => {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
     try {
       const response = await fetch(`${firebaseUrl}.json`);
+      const userId = getState().auth.userId;
 
       if (!response.ok) {
         throw new Error("Something went wrong!");
@@ -24,7 +25,7 @@ export const fetchProducts = () => {
         loadedProducts.push(
           new Product(
             key,
-            "u1",
+            currentProd.ownerId,
             currentProd.title,
             currentProd.imageUrl,
             currentProd.description,
@@ -33,7 +34,11 @@ export const fetchProducts = () => {
         );
       }
 
-      dispatch({ type: SET_PRODUCTS, products: loadedProducts });
+      dispatch({
+        type: SET_PRODUCTS,
+        products: loadedProducts,
+        userProducts: loadedProducts.filter((prod) => prod.ownerId === userId),
+      });
     } catch (error) {
       // send to custom analytics server
       throw error;
@@ -42,10 +47,14 @@ export const fetchProducts = () => {
 };
 
 export const deleteProduct = (productId) => {
-  return async (dispatch) => {
-    const response = await fetch(`${firebaseUrl}/${productId}.json`, {
-      method: "DELETE",
-    });
+  return async (dispatch, getState) => {
+    const token = getState().auth.token;
+    const response = await fetch(
+      `${firebaseUrl}/${productId}.json?auth=${token}`,
+      {
+        method: "DELETE",
+      }
+    );
 
     if (!response.ok) {
       throw new Error("Something went wrong!");
@@ -56,9 +65,11 @@ export const deleteProduct = (productId) => {
 };
 
 export const createProduct = (title, description, imageUrl, price) => {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
     // any async code you want!;
-    const response = await fetch(`${firebaseUrl}.json`, {
+    const token = getState().auth.token;
+    const userId = getState().auth.userId;
+    const response = await fetch(`${firebaseUrl}.json?auth=${token}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -68,6 +79,7 @@ export const createProduct = (title, description, imageUrl, price) => {
         description,
         imageUrl,
         price,
+        ownerId: userId,
       }),
     });
 
@@ -83,14 +95,16 @@ export const createProduct = (title, description, imageUrl, price) => {
         description,
         imageUrl,
         price,
+        ownerId: userId,
       },
     });
   };
 };
 
 export const updateProduct = (id, title, description, imageUrl) => {
-  return async (dispatch) => {
-    const response = await fetch(`${firebaseUrl}/${id}.json`, {
+  return async (dispatch, getState) => {
+    const token = getState().auth.token;
+    const response = await fetch(`${firebaseUrl}/${id}.json?auth=${token}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/jon",
